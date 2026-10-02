@@ -1,0 +1,20 @@
+{
+  "validUser": {
+    "name": "Test User",
+    "addno": "123456",
+    "college": "Test College",
+    "university": "Test University",
+    "branch": "CSE",
+    "email": "test.user@example.com",
+    "key": "valid-user-key"
+  },
+  "incompleteUser": {
+    "name": "Partial User",
+    "addno": "",
+    "college": "Test College",
+    "university": "",
+    "branch": "CSE",
+    "email": "partial@example.com",
+    "key": ""
+  }
+}

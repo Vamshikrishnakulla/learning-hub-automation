@@ -1,0 +1,44 @@
+# ====================================================================
+# DEPENDENCIES & RUNTIMES
+# ====================================================================
+node_modules/
+/dist/
+/out/
+.npm/
+
+# ====================================================================
+# PLAYWRIGHT SPECIFIC EXCLUSIONS
+# ====================================================================
+# Exclude browser downloads if you fetch them locally inside your project folder
+.local-browsers/
+
+# Exclude AI/MCP tool generation states and session logs
+.playwright-mcp/
+
+# Exclude automatically generated HTML test dashboards and tracking logs
+playwright-report/
+/reports/
+/coverage/
+test-results/
+.test-results/
+blob-report/
+playwright/.cache/
+
+# ====================================================================
+# SECURITY & LOCAL CONFIGS (Crucial for Privacy)
+# ====================================================================
+# Blocks local environment files where you keep private API tokens or logins
+.env
+.env.local
+.env.*.local
+
+# ====================================================================
+# OPERATING SYSTEM SPECIFIC TRASH
+# ====================================================================
+# Windows folder caching metadata
+Thumbs.db
+desktop.ini
+
+# Mac metadata archiving logs
+.DS_Store
+
