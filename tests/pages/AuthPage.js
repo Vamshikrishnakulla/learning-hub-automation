@@ -1,36 +1,63 @@
-// @ts-check
+// @ts-nocheck
 
 import BasePage from './BasePage.js';
+import { seedUserProfile as seedUserProfileInStorage } from '../utils/storageHelper.js';
 
 export default class AuthPage extends BasePage {
   constructor(page) {
     super(page);
 
     this.nameInput = page.getByRole('textbox', { name: 'Name :', exact: true });
-    this.signupNameInput = this.nameInput;
-    this.signupAdmissionNoInput = page.getByLabel('Admission No :');
-    this.signupCollegeInput = page.getByLabel('College Name :');
-    this.signupUniversityInput = page.getByLabel('University :');
-    this.signupBranchInput = page.getByLabel('Branch :');
-    this.signupEmailInput = page.getByLabel('Email address :');
-    this.signupPasswordInput = page.getByLabel('password :');
+    this.admissionNoInput = page.getByLabel('Admission No :');
+    this.collegeInput = page.getByLabel('College Name :');
+    this.universityInput = page.getByLabel('University :');
+    this.branchInput = page.getByLabel('Branch :');
+    this.emailInput = page.getByLabel('Email address :');
+    this.passwordInput = page.getByLabel('password :');
     this.signupSubmitButton = page.locator('#sub');
 
     this.loginEmailInput = page.getByLabel('Email address :');
     this.loginPasswordInput = page.getByLabel('Password :');
     this.loginSubmitButton = page.getByRole('button', { name: 'Submit' });
-    this.submitButton = page.getByRole('button', { name: 'Submit' });
+  }
+
+  async fillSignupForm(profile) {
+    for (const [key, val] of Object.entries(profile)) {
+      await this.fillSignupField(key, val);
+    }
+  }
+
+  async navigateToSignup() {
+    await this.page.goto('/signup.html');
+  }
+
+  async seedUserProfile(profile) {
+    await seedUserProfileInStorage(this.page, profile);
+  }
+
+  async mockSignupBackend() {
+    await this.page.route('**/script.google.com/**', (route) => route.fulfill({ status: 200, body: 'success' }));
+  }
+
+  async evaluateIsAuthenticated() {
+    return this.page.evaluate(() => {
+      const requiredKeys = ['name', 'addno', 'college', 'university', 'branch', 'email', 'key'];
+      return requiredKeys.every((key) => {
+        const val = window.localStorage.getItem(key);
+        return val !== null && val !== undefined && val !== '';
+      });
+    });
   }
 
   async fillSignupField(fieldName, value) {
     const fieldMap = {
-      name: this.signupNameInput,
-      addno: this.signupAdmissionNoInput,
-      college: this.signupCollegeInput,
-      university: this.signupUniversityInput,
-      branch: this.signupBranchInput,
-      email: this.signupEmailInput,
-      key: this.signupPasswordInput
+      name: this.nameInput,
+      addno: this.admissionNoInput,
+      college: this.collegeInput,
+      university: this.universityInput,
+      branch: this.branchInput,
+      email: this.emailInput,
+      key: this.passwordInput
     };
 
     const field = fieldMap[fieldName];
@@ -46,40 +73,13 @@ export default class AuthPage extends BasePage {
     });
   }
 
-  async fillSignupForm({ name, admissionNo, college, university, branch, email, password }) {
-    await this.signupNameInput.fill(name);
-    await this.signupNameInput.blur();
-    await this.signupAdmissionNoInput.fill(admissionNo);
-    await this.signupAdmissionNoInput.blur();
-    await this.signupCollegeInput.fill(college);
-    await this.signupCollegeInput.blur();
-    await this.signupUniversityInput.fill(university);
-    await this.signupUniversityInput.blur();
-    await this.signupBranchInput.fill(branch);
-    await this.signupBranchInput.blur();
-    await this.signupEmailInput.fill(email);
-    await this.signupEmailInput.blur();
-    await this.signupPasswordInput.fill(password);
-    await this.signupPasswordInput.blur();
-  }
-
   async submitSignupForm() {
     await this.signupSubmitButton.click();
-  }
-
-  async fillLoginForm({ email, password }) {
-    await this.loginEmailInput.fill(email);
-    await this.loginPasswordInput.fill(password);
   }
 
   async login(email, password) {
     await this.loginEmailInput.fill(email);
     await this.loginPasswordInput.fill(password);
     await this.loginSubmitButton.click();
-  }
-
-  async signup(formData) {
-    await this.fillSignupForm(formData);
-    await this.submitSignupForm();
   }
 }

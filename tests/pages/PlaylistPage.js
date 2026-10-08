@@ -1,6 +1,7 @@
 // @ts-check
 
 import BasePage from './BasePage.js';
+import { seedSubjectState as seedSubjectStateInStorage } from '../utils/storageHelper.js';
 
 export default class PlaylistPage extends BasePage {
   constructor(page) {
@@ -22,28 +23,15 @@ export default class PlaylistPage extends BasePage {
     await this.languageDropdown.selectOption(languageName);
   }
 
+  async navigateToPlaylist() {
+    await this.page.goto('/playlist.html');
+  }
+
+  async seedSubjectState(subjectName, subjectCode) {
+    await seedSubjectStateInStorage(this.page, subjectName, subjectCode);
+  }
+
   async openDiscussionRoom() {
     await this.discussionLinkAnchor.click();
-  }
-
-  async verifyDiscussionRoomRedirectsToLogin() {
-    await this.page.waitForURL(/\/login\.html$/);
-    await this.discussionLinkAnchor.waitFor({ state: 'visible' });
-  }
-
-  async getVideoPlaylistLink() {
-    return await this.videoPlaylistLink.getAttribute('href');
-  }
-
-  async verifyVideoPlaylistLink() {
-    const href = await this.getVideoPlaylistLink();
-    const target = await this.videoPlaylistLink.getAttribute('target');
-
-    if (!href || !/^https?:\/\//.test(href)) {
-      throw new Error(`Expected YouTube playlist URL but found: ${href}`);
-    }
-    if (target !== '_blank') {
-      throw new Error(`Expected playlist target to be _blank but found: ${target}`);
-    }
   }
 }

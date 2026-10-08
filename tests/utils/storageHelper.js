@@ -21,6 +21,16 @@ export async function seedUserProfile(page, profileObject = {}) {
       }
     });
   }, profile);
+
+  if (page.url() !== 'about:blank') {
+    await page.evaluate((storageProfile) => {
+      Object.entries(storageProfile).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          window.localStorage.setItem(key, String(value));
+        }
+      });
+    }, profile);
+  }
 }
 
 export async function seedSubjectState(page, subjectName, subjectCode) {

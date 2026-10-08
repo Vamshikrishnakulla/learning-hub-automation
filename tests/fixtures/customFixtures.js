@@ -7,6 +7,7 @@ import AuthPage from '../pages/AuthPage.js';
 import PlaylistPage from '../pages/PlaylistPage.js';
 import { seedUserProfile, seedSubjectState } from '../utils/storageHelper.js';
 import userProfiles from '../data/userProfiles.json';
+import courseData from '../data/courseData.json';
 
 export { expect };
 
@@ -42,8 +43,12 @@ export const test = base.extend({
 
   authenticatedPlaylistPage: async ({ page }, use) => {
     await seedUserProfile(page, userProfiles.validUser);
-    await seedSubjectState(page, 'BEE', '0');
+    await seedSubjectState(page, courseData.defaultCourse.name, courseData.defaultCourse.code);
     await page.goto('/playlist.html');
+    await use(new PlaylistPage(page));
+  },
+
+  playlistPage: async ({ page }, use) => {
     await use(new PlaylistPage(page));
   }
 });

@@ -1,131 +1,92 @@
 import { test, expect } from '../fixtures/customFixtures.js';
-import { evaluateIsAuthenticated } from '../utils/storageHelper.js';
+import userProfiles from '../data/userProfiles.json';
 
 test.describe('Registration and authentication', () => {
-  test('TC_AUTH_001: verifies signup inputs persist to localStorage on focusout', async ({ signupPage, page }) => {
-    // Arrange
-    const profile = {
-      name: 'Test User',
-      addno: '123456',
-      college: 'Test College',
-      university: 'Test University',
-      branch: 'CSE',
-      email: 'test.user@example.com',
-      key: 'pass123'
-    };
-
+  test('TC_AUTH_001: verifies signup inputs persist to localStorage on focusout', async ({ signupPage }) => {
     // Act
-    for (const [fieldName, value] of Object.entries(profile)) {
-      await signupPage.fillSignupField(fieldName, value);
-    }
+    await signupPage.fillSignupForm(userProfiles.validUser);
 
     // Assert
-    for (const [fieldName, value] of Object.entries(profile)) {
-      const persisted = await page.evaluate((key) => localStorage.getItem(key), fieldName);
-      expect(persisted).toBe(String(value));
+    for (const [fieldName, value] of Object.entries(userProfiles.validUser)) {
+      await expect.poll(async () => {
+        return signupPage.getLocalStorageItem(fieldName);
+      }).toBe(String(value));
     }
   });
 
-  test('TC_AUTH_002: prevents signup when required fields are incomplete', async ({ signupPage, page }) => {
+  test('TC_AUTH_002: prevents signup when required fields are incomplete', async ({ signupPage }) => {
     // Arrange
-    await signupPage.fillSignupField('name', 'Test User');
-    await signupPage.fillSignupField('addno', '123456');
-    await signupPage.fillSignupField('college', '');
-    await signupPage.fillSignupField('university', 'Test University');
-    await signupPage.fillSignupField('branch', 'CSE');
-    await signupPage.fillSignupField('email', 'test.user@example.com');
-    await signupPage.fillSignupField('key', 'pass123');
+    for (const [fieldName, value] of Object.entries(userProfiles.incompleteUser)) {
+      await signupPage.fillSignupField(fieldName, value);
+    }
 
     // Act
     await signupPage.submitSignupForm();
 
     // Assert
-    await expect(page).toHaveURL(/signup\.html$/);
+    await expect(signupPage.page).toHaveURL(/signup\.html$/);
   });
 
-  test('TC_AUTH_003: allows complete signup to proceed', async ({ signupPage, page }) => {
-    // Arrange
-    const profile = {
-      name: 'Test User',
-      addno: '123456',
-      college: 'Test College',
-      university: 'Test University',
-      branch: 'CSE',
-      email: 'test.user@example.com',
-      key: 'pass123'
-    };
+  test('TC_AUTH_003: allows complete signup to proceed', async ({ signupPage }) => {
+    await signupPage.mockSignupBackend();
+    signupPage.setupDialogHandler();
 
     // Act
-    for (const [fieldName, value] of Object.entries(profile)) {
-      await signupPage.fillSignupField(fieldName, value);
-    }
+    await signupPage.fillSignupForm(userProfiles.validUser);
     await signupPage.submitSignupForm();
 
     // Assert
-    await expect(page).toHaveURL(/login\.html$/, { timeout: 10000 });
+    await expect(signupPage.page).toHaveURL(/login\.html$/, { timeout: 10000 });
   });
 
-  test('TC_AUTH_004: redirects to signup when login uses unregistered credentials', async ({ loginPage, page }) => {
+  test('TC_AUTH_004: redirects to signup when login uses unregistered credentials', async ({ loginPage }) => {
     // Arrange
     // no stored credentials set
+    loginPage.setupDialogHandler();
 
     // Act
     await loginPage.login('unknown@example.com', 'wrongpass');
 
     // Assert
-    await expect(page).toHaveURL(/signup\.html$/);
+    await expect(loginPage.page).toHaveURL(/signup\.html$/, { timeout: 10000 });
   });
 
-  test('TC_AUTH_005: logs in successfully with stored valid credentials', async ({ loginPage, page }) => {
+  test('TC_AUTH_005: logs in successfully with stored valid credentials', async ({ loginPage }) => {
     // Arrange
-    await page.evaluate(() => {
-      localStorage.setItem('email', 'user@test.com');
-      localStorage.setItem('key', 'pass123');
-    });
+    await loginPage.seedUserProfile(userProfiles.validUser);
 
     // Act
-    await loginPage.login('user@test.com', 'pass123');
+    await loginPage.login(userProfiles.validUser.email, userProfiles.validUser.key);
 
     // Assert
-    await expect(page).toHaveURL(/category\.html$/);
+    await expect(loginPage.page).toHaveURL(/category\.html$/);
   });
 
-  test('TC_AUTH_006: rejects login when password is incorrect', async ({ loginPage, page }) => {
+  test('TC_AUTH_006: rejects login when password is incorrect', async ({ loginPage }) => {
     // Arrange
-    await page.evaluate(() => {
-      localStorage.setItem('email', 'user@test.com');
-      localStorage.setItem('key', 'pass123');
-    });
+    await loginPage.seedUserProfile(userProfiles.validUser);
 
     // Act
-    await loginPage.login('user@test.com', 'wrongpass');
+    await loginPage.login(userProfiles.validUser.email, 'wrongpass');
 
     // Assert
-    await expect(page).toHaveURL(/login\.html$/);
+    await expect(loginPage.page).toHaveURL(/login\.html$/);
   });
 
-  test('TC_AUTH_007: evaluates isAuthenticated() return values correctly', async ({ page }) => {
+  test('TC_AUTH_007: evaluates isAuthenticated() return values correctly', async ({ authPage }) => {
     // Arrange
-    await page.goto('/signup.html');
-    await page.evaluate(() => {
-      localStorage.setItem('name', 'Test User');
-      localStorage.setItem('addno', '123456');
-      localStorage.setItem('college', 'Test College');
-      localStorage.setItem('university', 'Test University');
-      localStorage.setItem('branch', 'CSE');
-      localStorage.setItem('email', 'user@test.com');
-      localStorage.setItem('key', 'pass123');
-    });
+    await authPage.navigateToSignup();
+    await authPage.seedUserProfile(userProfiles.validUser);
 
     // Act
-    const isAuthenticated = await evaluateIsAuthenticated(page);
+    const isAuthenticated = await authPage.evaluateIsAuthenticated();
 
     // Assert
     expect(isAuthenticated).toBe(true);
 
     // Act
-    await page.evaluate(() => localStorage.removeItem('college'));
-    const isMissingCollege = await evaluateIsAuthenticated(page);
+    await authPage.removeLocalStorageItem('college');
+    const isMissingCollege = await authPage.evaluateIsAuthenticated();
 
     // Assert
     expect(isMissingCollege).toBe(false);

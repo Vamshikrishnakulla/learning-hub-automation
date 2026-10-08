@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures/customFixtures.js';
+import courseData from '../data/courseData.json';
 
 test.describe('Subject and semester selection', () => {
   test('TC_SUB_001: verifies the sidebar semester group toggles', async ({ subCategoryPage }) => {
@@ -19,20 +20,20 @@ test.describe('Subject and semester selection', () => {
     // fixture loads /sub_category_transparent.html
 
     // Act
-    await subCategoryPage.selectSubjectByName('BEE');
+    await subCategoryPage.selectSubjectByName(courseData.defaultCourse.name);
 
     // Assert
-    const selectedSubject = await subCategoryPage.page.evaluate(() => localStorage.getItem('subject'));
-    const subjectCode = await subCategoryPage.page.evaluate(() => localStorage.getItem('subjectcode'));
+    const selectedSubject = await subCategoryPage.getLocalStorageItem('subject');
+    const subjectCode = await subCategoryPage.getLocalStorageItem('subjectcode');
 
-    expect(selectedSubject).toBe('BEE');
-    expect(subjectCode).toBe('0');
+    expect(selectedSubject).toBe(courseData.defaultCourse.name);
+    expect(subjectCode).toBe(courseData.defaultCourse.code);
     await expect(subCategoryPage.beeSubject).toBeVisible();
   });
 
   test('TC_SUB_003: verifies the question paper button shows the paper view', async ({ subCategoryPage }) => {
     // Arrange
-    await subCategoryPage.selectSubjectByName('BEE');
+    await subCategoryPage.selectSubjectByName(courseData.defaultCourse.name);
 
     // Act
     await subCategoryPage.clickQuestionPaperButton();
@@ -44,10 +45,11 @@ test.describe('Subject and semester selection', () => {
 
   test('TC_SUB_004: verifies the syllabus button restores the syllabus view', async ({ subCategoryPage }) => {
     // Arrange
-    await subCategoryPage.selectSubjectByName('BEE');
-    await subCategoryPage.clickQuestionPaperButton();
+    await subCategoryPage.selectSubjectByName(courseData.defaultCourse.name);
 
     // Act
+    await subCategoryPage.clickQuestionPaperButton();
+    await expect(subCategoryPage.syllabusButton).toBeVisible();
     await subCategoryPage.clickSyllabusButton();
 
     // Assert
@@ -57,7 +59,7 @@ test.describe('Subject and semester selection', () => {
 
   test('TC_SUB_005: verifies selecting a new subject resets the button state', async ({ subCategoryPage }) => {
     // Arrange
-    await subCategoryPage.selectSubjectByName('BEE');
+    await subCategoryPage.selectSubjectByName(courseData.defaultCourse.name);
     await subCategoryPage.clickQuestionPaperButton();
 
     // Act
@@ -68,21 +70,21 @@ test.describe('Subject and semester selection', () => {
     await expect(subCategoryPage.syllabusButton).toBeHidden();
   });
 
-  test('TC_SUB_006: verifies the selected course redirects to the playlist page', async ({ subCategoryPage, page }) => {
+  test('TC_SUB_006: verifies the selected course redirects to the playlist page', async ({ subCategoryPage }) => {
     // Arrange
-    await subCategoryPage.selectSubjectByName('BEE');
+    await subCategoryPage.selectSubjectByName(courseData.defaultCourse.name);
 
     // Act
     await subCategoryPage.submitSelectedSubject();
 
     // Assert
-    await expect(page).toHaveURL(/playlist\.html$/);
+    await expect(subCategoryPage.page).toHaveURL(/playlist\.html$/);
   });
 
-  test('TC_SUB_007: verifies the mobile sidebar drawer can toggle open and closed', async ({ subCategoryPage, page }) => {
+  test('TC_SUB_007: verifies the mobile sidebar drawer can toggle open and closed', async ({ subCategoryPage }) => {
     // Arrange
     // The app is expected to expose a mobile subject drawer toggle.
-    await page.setViewportSize({ width: 375, height: 667 });
+    await subCategoryPage.setMobileViewport();
     await expect(subCategoryPage.subjectOpenButton).toBeVisible();
 
     // Act
@@ -96,5 +98,6 @@ test.describe('Subject and semester selection', () => {
 
     // Assert
     await expect(subCategoryPage.cardDisplay).toBeHidden();
+    await expect(subCategoryPage.page).toHaveURL(/sub_category_transparent\.html$/);
   });
 });

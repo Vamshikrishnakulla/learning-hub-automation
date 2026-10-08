@@ -1,6 +1,7 @@
 # Learning Hub Automation Workspace
 
 This workspace contains the Playwright-based black-box test automation suite for the Learning Hub application. The application itself is served from the live frontend environment at `http://localhost:8000`, while this workspace focuses on automation, page-object modeling, state seeding, and regression validation.
+Frontend environment can be cloned from github repo: https://github.com/Vamshikrishnakulla/TestingProject
 
 ## Project Purpose
 
@@ -30,6 +31,7 @@ LearningHubAutomation/
 │   
 ├── tests/
 │   ├── data/
+│   │   ├── courseData.json
 │   │   └── userProfiles.json
 │   ├── fixtures/
 │   │   └── customFixtures.js
@@ -63,17 +65,17 @@ LearningHubAutomation/
 The application under test is live and external to this workspace. Test scripts do not rely on direct DOM source inspection from the frontend repository. Instead, all selector decisions are driven by actual Playwright runtime inspection of the browser accessibility tree and the live page behavior.
 
 ### 2. Page Object Model first
-All site behaviors are encapsulated in page objects under `tests/pages/`.
+Page objects under `tests/pages/` own page locators and user interactions. Specs own test expectations and assertions; page classes do not call `expect`.
 
 Examples:
-- `BasePage` handles common injected header/footer logic and nav behavior
+- `BasePage` exposes common header, footer, and navigation locators and provides navigation/menu actions
 - `CategoryPage` handles branch cards and branch restrictions
 - `SubCategoryPage` handles semester toggles and subject state logic
-- `AuthPage` handles signup and login flows
-- `PlaylistPage` handles user greeting, language switching, and discussion-room checks
+- `AuthPage` exposes signup/login locators, fills signup fields (including blur/focusout behavior), and handles form submission
+- `PlaylistPage` exposes playlist locators and handles language selection and discussion-room interaction
 
 ### 3. Fixture-driven setup
-The suite uses Playwright custom fixtures from `tests/fixtures/customFixtures.js` to provide page objects and pre-seed browser state before navigation. This keeps tests DRY and avoids repeated inline localStorage setup and object instantiation.
+The suite uses Playwright custom fixtures from `tests/fixtures/customFixtures.js` to provide page objects and pre-seed browser state before navigation. The authenticated playlist fixture reads the default subject name and code from `tests/data/courseData.json` and the profile from `tests/data/userProfiles.json`. This keeps tests DRY and avoids repeated setup and object instantiation.
 
 ### 4. Storage state isolation
 The app uses browser `localStorage` to persist profile and course state. Storage setup is centralized in `tests/utils/storageHelper.js` so the suite can seed valid users and subject selections without brittle manual setup in each spec.
@@ -96,6 +98,7 @@ These files collectively cover the core modules:
 - signup/login validation
 - playlist page guard logic and language switching
 - discussion room redirect behavior
+- parameterized alert and navigation checks for the unsupported ECE, EEE, and CIVIL branches
 
 ## Setup and Execution
 
@@ -103,7 +106,7 @@ These files collectively cover the core modules:
 
 - Node.js 18+
 - Playwright package installed from the project dependencies
-- Local Learning Hub site running at `http://localhost:8000`
+- Local Learning Hub frontend environment running at `http://localhost:8000`
 
 ### Install dependencies
 
@@ -115,6 +118,12 @@ npm install
 
 ```bash
 npx playwright test
+```
+
+The project configuration retries failed tests once and uses Chromium by default. To run serially, for example while diagnosing a flaky result:
+
+```bash
+npx playwright test --workers=1
 ```
 
 ### Run a single spec file
@@ -140,7 +149,7 @@ npx playwright test --headed
 ### Page Objects
 
 - `tests/pages/BasePage.js`
-  - shared layout checks
+  - shared header, footer, and navigation locators
   - nav/link actions
   - mobile menu toggling
 
@@ -154,13 +163,14 @@ npx playwright test --headed
   - submit flow to playlist
 
 - `tests/pages/AuthPage.js`
-  - signup form population and submit logic
-  - login form interaction
+  - unified signup field locators and `fillSignupField(fieldName, value)`
+  - signup and login submission flows
 
 - `tests/pages/PlaylistPage.js`
-  - greeting and status verification
-  - language selection and playlist link checks
-  - discussion-room access behaviors
+  - greeting, status, language, and resource locators
+  - language selection and discussion-room interaction
+
+Assertions for these locators are kept in the corresponding spec files.
 
 ### Storage and Data
 
@@ -172,6 +182,8 @@ npx playwright test --headed
 
 - `tests/data/userProfiles.json`
   - mock valid and incomplete profile payloads for auth validation
+- `tests/data/courseData.json`
+  - default course name and code shared by playlist and subject tests
 
 ### Fixtures
 
@@ -193,7 +205,8 @@ The tests intentionally avoid manual duplicate logic by reusing the helper layer
 
 - Use web-first assertions (`await expect(...)`) whenever possible.
 - Handle native browser alerts using `page.on('dialog', ...)` before triggering protected actions.
-- Prefer POM API methods over direct DOM queries in spec files.
+- Keep locators and reusable UI interactions in page objects; perform assertions in spec files.
+- Reuse the profile and course payloads in `tests/data/` instead of duplicating test data.
 - Avoid hard-coded sleeps; wait for actual UI state or element visibility changes.
 
 ## Automation Quality Goals
@@ -213,11 +226,11 @@ This project is intentionally structured as a black-box automation suite. Becaus
 - documented product behavior from the QA strategy and feature specification files
 - fixture-based state management instead of source-code coupling
 
-This means the automation can catch real regressions in the live frontend while staying decoupled from the app implementation details in Workspace A.
+This means the automation can catch real regressions in the live frontend while staying decoupled from the app implementation details.
 
 ## Recommended Workflow
 
-1. Start the application locally at `http://localhost:8000`.
+1. Start the Front end application locally at `http://localhost:8000`.
 2. Run targeted specs during development.
 3. Update POM actions when the live app behavior changes.
 4. Reuse the storage helper instead of duplicating session setup.

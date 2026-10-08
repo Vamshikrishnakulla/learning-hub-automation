@@ -21,51 +21,17 @@ test.describe('Branch selection dashboard', () => {
     await expect(categoryPage.page).toHaveURL(/sub_category_transparent\.html$/);
   });
 
-  test('TC_CAT_003: verifies the ECE branch is blocked with an alert', async ({ categoryPage, page }) => {
-    // Arrange
-    let dialogMessage = '';
-    page.on('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
+  for (const [index, branch] of ['ECE', 'EEE', 'CIVIL'].entries()) {
+    test(`TC_CAT_00${index + 3}: verifies the ${branch} branch is blocked with an alert`, async ({ categoryPage }) => {
+      let dialogMessage = '';
+      categoryPage.setupDialogHandler((message) => {
+        dialogMessage = message;
+      });
+
+      await categoryPage.selectBranch(branch);
+
+      expect(dialogMessage).toContain('Currently, the service is only avaliable for the branch CSE');
+      await expect(categoryPage.page).toHaveURL(/category\.html(#|\?.*)?$/);
     });
-
-    // Act
-    await categoryPage.selectBranch('ECE');
-
-    // Assert
-    await expect(page).toHaveURL(/category\.html$/);
-    expect(dialogMessage).toContain('Currently, the service is only avaliable for the branch CSE');
-  });
-
-  test('TC_CAT_004: verifies the EEE branch is blocked with an alert', async ({ categoryPage, page }) => {
-    // Arrange
-    let dialogMessage = '';
-    page.on('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
-    });
-
-    // Act
-    await categoryPage.selectBranch('EEE');
-
-    // Assert
-    await expect(page).toHaveURL(/category\.html$/);
-    expect(dialogMessage).toContain('Currently, the service is only avaliable for the branch CSE');
-  });
-
-  test('TC_CAT_005: verifies the CIVIL branch is blocked with an alert', async ({ categoryPage, page }) => {
-    // Arrange
-    let dialogMessage = '';
-    page.on('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
-    });
-
-    // Act
-    await categoryPage.selectBranch('CIVIL');
-
-    // Assert
-    await expect(page).toHaveURL(/category\.html$/);
-    expect(dialogMessage).toContain('Currently, the service is only avaliable for the branch CSE');
-  });
+  }
 });

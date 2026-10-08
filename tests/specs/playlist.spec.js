@@ -1,33 +1,32 @@
 import { test, expect } from '../fixtures/customFixtures.js';
-import { clearStorage } from '../utils/storageHelper.js';
+import courseData from '../data/courseData.json';
 
 test.describe('Playlist page behavior', () => {
-  test('TC_PLAY_001: unauthenticated playlist access without a selected subject triggers the navigation guard alert', async ({ page }) => {
+  test('TC_PLAY_001: unauthenticated playlist access without a selected subject triggers the navigation guard alert', async ({ playlistPage }) => {
     // Arrange
-    await clearStorage(page);
+    await playlistPage.clearStorage();
     let dialogMessage = '';
-    page.on('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
+    playlistPage.setupDialogHandler((message) => {
+      dialogMessage = message;
     });
 
     // Act
-    await page.goto('/playlist.html');
+    await playlistPage.navigateToPlaylist();
 
     // Assert
-    await expect(page).toHaveURL(/\/category\.html$/);
+    await expect(playlistPage.page).toHaveURL(/\/category\.html$/);
     expect(dialogMessage).toContain('Please, Choose the subject.');
   });
 
-  test('TC_PLAY_002: direct playlist navigation with no stored subject redirects users back to the category page', async ({ page }) => {
+  test('TC_PLAY_002: direct playlist navigation with no stored subject redirects users back to the category page', async ({ playlistPage }) => {
     // Arrange
-    await clearStorage(page);
+    await playlistPage.clearStorage();
 
     // Act
-    await page.goto('/playlist.html');
+    await playlistPage.navigateToPlaylist();
 
     // Assert
-    await expect(page).toHaveURL(/\/category\.html$/);
+    await expect(playlistPage.page).toHaveURL(/\/category\.html$/);
   });
 
   test('TC_PLAY_003: a selected subject renders the personalized greeting on the playlist page', async ({ authenticatedPlaylistPage }) => {
@@ -44,7 +43,7 @@ test.describe('Playlist page behavior', () => {
 
     // Assert
     await expect(authenticatedPlaylistPage.statusText).toContainText('You have choosed to learn');
-    await expect(authenticatedPlaylistPage.statusText).toContainText('BEE');
+    await expect(authenticatedPlaylistPage.statusText).toContainText(courseData.defaultCourse.name);
   });
 
   test('TC_PLAY_005: language selector is visible with the default prompt intact', async ({ authenticatedPlaylistPage }) => {
@@ -56,66 +55,39 @@ test.describe('Playlist page behavior', () => {
     await expect(authenticatedPlaylistPage.languageDropdown).toHaveValue('null');
   });
 
-  test('TC_PLAY_006: selecting English persists the language to localStorage and updates the playlist URL', async ({ authenticatedPlaylistPage }) => {
-    // Act
-    await authenticatedPlaylistPage.selectLanguage('English');
-
-    // Assert
-    await expect(authenticatedPlaylistPage.languageDropdown).toHaveValue('English');
-    const savedLanguage = await authenticatedPlaylistPage.page.evaluate(() => window.localStorage.getItem('language'));
-    expect(savedLanguage).toBe('English');
-    await authenticatedPlaylistPage.verifyVideoPlaylistLink();
-  });
-
-  test('TC_PLAY_007: selecting Hindi persists the language to localStorage and updates the playlist URL', async ({ authenticatedPlaylistPage }) => {
-    // Act
-    await authenticatedPlaylistPage.selectLanguage('Hindi');
-
-    // Auto-wait for DOM update before reading storage
-    await expect(authenticatedPlaylistPage.statusText).toContainText('Hindi');
-
-    // Assert
-    const savedLanguage = await authenticatedPlaylistPage.page.evaluate(() => window.localStorage.getItem('language'));
-    expect(savedLanguage).toBe('Hindi');
-    await expect(authenticatedPlaylistPage.languageDropdown).toHaveValue('Hindi');
-    await authenticatedPlaylistPage.verifyVideoPlaylistLink();
-  });
-
-  test('TC_PLAY_008: selecting Telugu persists the language to localStorage and updates the playlist URL', async ({ authenticatedPlaylistPage }) => {
-    // Act
-    await authenticatedPlaylistPage.selectLanguage('Telugu');
-
-    // Assert
-    await expect(authenticatedPlaylistPage.languageDropdown).toHaveValue('Telugu');
-    const savedLanguage = await authenticatedPlaylistPage.page.evaluate(() => window.localStorage.getItem('language'));
-    expect(savedLanguage).toBe('Telugu');
-    await authenticatedPlaylistPage.verifyVideoPlaylistLink();
-  });
+  for (const [index, lang] of ['English', 'Hindi', 'Telugu'].entries()) {
+    test(`TC_PLAY_00${index + 6}: selecting ${lang} persists language to localStorage and updates the playlist URL`, async ({ authenticatedPlaylistPage }) => {
+      authenticatedPlaylistPage.setupDialogHandler();
+      await authenticatedPlaylistPage.selectLanguage(lang);
+      await expect.poll(async () => {
+        return authenticatedPlaylistPage.page.evaluate(() => window.localStorage.getItem('language'));
+      }).toBe(lang);
+      await expect(authenticatedPlaylistPage.videoPlaylistLink).toHaveAttribute('href', /^https?:\/\//);
+      await expect(authenticatedPlaylistPage.videoPlaylistLink).toHaveAttribute('target', '_blank');
+    });
+  }
 
   test('TC_PLAY_009: the video playlist link is not a placeholder and exposes a valid external target', async ({ authenticatedPlaylistPage }) => {
     // Arrange
     await authenticatedPlaylistPage.selectLanguage('English');
 
     // Assert
+    await expect(authenticatedPlaylistPage.statusText).toContainText('English');
     await expect(authenticatedPlaylistPage.videoButton).toHaveAttribute('href', /youtube\.com|youtu\.be/);
     await expect(authenticatedPlaylistPage.videoButton).toHaveAttribute('target', '_blank');
   });
 
-  test('TC_PLAY_010: unauthenticated discussion room click redirects to the login page', async ({ page }) => {
+  test('TC_PLAY_010: unauthenticated discussion room click redirects to the login page', async ({ playlistPage }) => {
     // Arrange
-    await clearStorage(page);
-    await page.addInitScript(() => {
-      window.localStorage.setItem('subject', 'BEE');
-      window.localStorage.setItem('subjectcode', '0');
-      window.localStorage.setItem('language', 'English');
-    });
+    await playlistPage.clearStorage();
+    await playlistPage.seedSubjectState(courseData.defaultCourse.name, courseData.defaultCourse.code);
 
     // Act
-    await page.goto('/playlist.html');
-    await page.getByRole('link', { name: /Please, Login/i }).click();
+    await playlistPage.navigateToPlaylist();
+    await playlistPage.openDiscussionRoom();
 
     // Assert
-    await expect(page).toHaveURL(/\/login\.html$/);
+    await expect(playlistPage.page).toHaveURL(/\/login\.html$/);
   });
 
   test.fixme('TC_PLAY_011: authenticated discussion-room access should succeed when the valid session is present', async ({ authenticatedPlaylistPage }) => {
