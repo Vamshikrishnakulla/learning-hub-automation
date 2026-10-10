@@ -8,8 +8,8 @@ export default class SubCategoryPage extends BasePage {
 
     this.semesterHeaders = page.getByText(/I-I SEM|I-II SEM|II-I SEM|II-II SEM|III-I SEM|III-II SEM|IV-I SEM|IV-II SEM/);
     this.subjectLinks = page.locator('a[href="#getimage"]');
-    this.questionPaperButton = page.locator('#qpaperbutton');
-    this.syllabusButton = page.locator('#spaperbutton');
+    this.questionPaperButton = page.getByRole('button', { name: 'View Question Papers' });
+    this.syllabusButton = page.getByRole('button', { name: 'View Syllabus Copy' });
     this.syllabusImage = page.locator('img[alt*="Oops"], img[alt*="Image is Missing"]');
     this.submitButton = page.getByRole('link', { name: 'submit' });
     this.subjectOpenButton = page.locator('#subject-open');

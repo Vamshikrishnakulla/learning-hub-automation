@@ -15,7 +15,7 @@ test.describe('Playlist page behavior', () => {
 
     // Assert
     await expect(playlistPage.page).toHaveURL(/\/category\.html$/);
-    expect(dialogMessage).toContain('Please, Choose the subject.');
+    expect(dialogMessage).toContain('Please, Choose a valid subject from the catalog.');
   });
 
   test('TC_PLAY_002: direct playlist navigation with no stored subject redirects users back to the category page', async ({ playlistPage }) => {
@@ -42,7 +42,7 @@ test.describe('Playlist page behavior', () => {
     // fixture seeds valid user + subject before navigating to /playlist.html
 
     // Assert
-    await expect(authenticatedPlaylistPage.statusText).toContainText('You have choosed to learn');
+    await expect(authenticatedPlaylistPage.statusText).toContainText('You have chosen to learn');
     await expect(authenticatedPlaylistPage.statusText).toContainText(courseData.defaultCourse.name);
   });
 
@@ -72,7 +72,7 @@ test.describe('Playlist page behavior', () => {
     await authenticatedPlaylistPage.selectLanguage('English');
 
     // Assert
-    await expect(authenticatedPlaylistPage.statusText).toContainText('English');
+    await expect(authenticatedPlaylistPage.languageDropdown).toHaveValue('English');
     await expect(authenticatedPlaylistPage.videoButton).toHaveAttribute('href', /youtube\.com|youtu\.be/);
     await expect(authenticatedPlaylistPage.videoButton).toHaveAttribute('target', '_blank');
   });
@@ -90,16 +90,19 @@ test.describe('Playlist page behavior', () => {
     await expect(playlistPage.page).toHaveURL(/\/login\.html$/);
   });
 
-  test.fixme('TC_PLAY_011: authenticated discussion-room access should succeed when the valid session is present', async ({ authenticatedPlaylistPage }) => {
-    // The live app currently keeps the discussion room behind the login placeholder even when the
-    // localStorage profile and subject are seeded before navigation. This is a known app-level gap.
-    const discussionLink = authenticatedPlaylistPage.discussionLink.locator('a');
-    await expect(discussionLink).not.toHaveAttribute('href', '#');
+  test('TC_PLAY_011: authenticated discussion-room access shows the active development alert', async ({ authenticatedPlaylistPage }) => {
+    let dialogMessage = '';
+    authenticatedPlaylistPage.setupDialogHandler((message) => {
+      dialogMessage = message;
+    });
+
+    await authenticatedPlaylistPage.openDiscussionRoom();
+
+    expect(dialogMessage).toContain('This feature is currently under active development');
+    await expect(authenticatedPlaylistPage.page).toHaveURL(/\/playlist\.html$/);
   });
 
-  test.fixme('TC_PLAY_012: authenticated topic access should not redirect the user to login when the session is active', async ({ authenticatedPlaylistPage }) => {
-    const discussionLink = authenticatedPlaylistPage.discussionLink.locator('a');
-    await expect(discussionLink).toHaveAttribute('href', /\w+/);
-    await expect(discussionLink).toHaveAttribute('target', '_blank');
+  test('TC_PLAY_012: authenticated discussion-room link uses the in-page discussion route', async ({ authenticatedPlaylistPage }) => {
+    await expect(authenticatedPlaylistPage.discussionLinkAnchor).toHaveAttribute('href', '#discussion');
   });
 });

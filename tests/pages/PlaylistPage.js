@@ -7,13 +7,12 @@ export default class PlaylistPage extends BasePage {
   constructor(page) {
     super(page);
 
-    this.greetingHeader = page.locator('#demo');
+    this.greetingHeader = page.locator('.user-greeting');
     this.statusText = page.locator('#parachange');
-    this.languageDropdown = page.locator('#lan');
-    this.webButton = page.locator('#webBtn');
-    this.videoButton = page.locator('#videoBtn a');
-    this.notesButton = page.locator('#notesBtn');
-    this.discussionLink = page.locator('#discussLink');
+    this.languageDropdown = page.getByRole('combobox', { name: 'Select Video Language' });
+    this.webButton = page.getByRole('link', { name: 'Open web reference' });
+    this.videoButton = page.getByRole('link', { name: 'Start video learning' });
+    this.notesButton = page.getByRole('link', { name: 'Download notes' });
     this.discussionLinkAnchor = page.locator('#discussLink a');
     this.videoPlaylistLink = page.locator('#playlist2');
     this.backLink = page.getByRole('link', { name: '<<Back' });

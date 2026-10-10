@@ -1,7 +1,10 @@
 // @ts-nocheck
 
 import BasePage from './BasePage.js';
-import { seedUserProfile as seedUserProfileInStorage } from '../utils/storageHelper.js';
+import {
+  evaluateIsAuthenticated as evaluateIsAuthenticatedInStorage,
+  seedUserProfile as seedUserProfileInStorage
+} from '../utils/storageHelper.js';
 
 export default class AuthPage extends BasePage {
   constructor(page) {
@@ -40,13 +43,7 @@ export default class AuthPage extends BasePage {
   }
 
   async evaluateIsAuthenticated() {
-    return this.page.evaluate(() => {
-      const requiredKeys = ['name', 'addno', 'college', 'university', 'branch', 'email', 'key'];
-      return requiredKeys.every((key) => {
-        const val = window.localStorage.getItem(key);
-        return val !== null && val !== undefined && val !== '';
-      });
-    });
+    return evaluateIsAuthenticatedInStorage(this.page);
   }
 
   async fillSignupField(fieldName, value) {

@@ -3,19 +3,12 @@
     "playwright": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest",
-        "--browser=chromium"
-      ]
+      "args": ["-y", "@playwright/mcp@latest", "--browser=chromium"]
     },
     "playwright-test": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "playwright",
-        "run-test-mcp-server"
-      ]
+      "args": ["playwright", "run-test-mcp-server"]
     }
   }
 }

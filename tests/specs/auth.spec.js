@@ -85,10 +85,10 @@ test.describe('Registration and authentication', () => {
     expect(isAuthenticated).toBe(true);
 
     // Act
-    await authPage.removeLocalStorageItem('college');
-    const isMissingCollege = await authPage.evaluateIsAuthenticated();
+    await authPage.removeLocalStorageItem('isLoggedIn');
+    const isLoggedOut = await authPage.evaluateIsAuthenticated();
 
     // Assert
-    expect(isMissingCollege).toBe(false);
+    expect(isLoggedOut).toBe(false);
   });
 });

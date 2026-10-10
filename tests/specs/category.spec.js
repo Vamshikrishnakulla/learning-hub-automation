@@ -30,7 +30,7 @@ test.describe('Branch selection dashboard', () => {
 
       await categoryPage.selectBranch(branch);
 
-      expect(dialogMessage).toContain('Currently, the service is only avaliable for the branch CSE');
+      expect(dialogMessage).toContain('Currently, the service is only available for the CSE branch.');
       await expect(categoryPage.page).toHaveURL(/category\.html(#|\?.*)?$/);
     });
   }

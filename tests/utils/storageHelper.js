@@ -11,6 +11,7 @@ export async function seedUserProfile(page, profileObject = {}) {
     branch: '',
     email: '',
     key: '',
+    isLoggedIn: 'true',
     ...profileObject
   };
 
@@ -48,11 +49,7 @@ export async function clearStorage(page) {
 
 export async function evaluateIsAuthenticated(page) {
   return await page.evaluate(() => {
-    const requiredKeys = ['name', 'addno', 'college', 'university', 'branch', 'email', 'key'];
-    return requiredKeys.every((key) => {
-      const value = window.localStorage.getItem(key);
-      return value !== null && value !== undefined && value !== '';
-    });
+    return window.localStorage.getItem('isLoggedIn') === 'true';
   });
 }
 

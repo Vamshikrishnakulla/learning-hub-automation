@@ -22,13 +22,17 @@ This is a POM-first, fixture-driven Playwright project designed around the const
 LearningHubAutomation/
 ├── .github/
 │   ├── copilot-instructions.md
-│   └── docs/
-│       ├── automation-audit-report.md
-│       ├── specifications/
-│       │   └── learning-hub-spec.md
-│       └── test-strategy.md
-├── specs/
-│   
+│   ├── agents/
+│   │   ├── playwright-test-generator.agent.md
+│   │   ├── playwright-test-healer.agent.md
+│   │   └── playwright-test-planner.agent.md
+│   ├── docs/
+│   │   ├── automation-audit-report.md
+│   │   ├── specifications/
+│   │   │   └── learning-hub-spec.md
+│   │   └── test-strategy.md
+│   └── workflows/
+│       └── playwright.yml
 ├── tests/
 │   ├── data/
 │   │   ├── courseData.json
@@ -41,20 +45,19 @@ LearningHubAutomation/
 │   │   ├── CategoryPage.js
 │   │   ├── PlaylistPage.js
 │   │   └── SubCategoryPage.js
-│   ├── specs/
+│   ├── specs/                 # 36 Playwright cases across five active .spec.js files
 │   │   ├── auth.spec.js
 │   │   ├── category.spec.js
 │   │   ├── components.spec.js
 │   │   ├── playlist.spec.js
+│   │   ├── seed.spec.ts       # empty placeholder
 │   │   └── sub_category.spec.js
 │   └── utils/
 │       └── storageHelper.js
-├── node_modules/
 ├── package.json
+├── package-lock.json
 ├── playwright.config.js
 ├── README.md
-├── playwright-report/
-├── test-results/
 ├── .vscode/
 └── .git/
 ```
@@ -75,7 +78,7 @@ Examples:
 - `PlaylistPage` exposes playlist locators and handles language selection and discussion-room interaction
 
 ### 3. Fixture-driven setup
-The suite uses Playwright custom fixtures from `tests/fixtures/customFixtures.js` to provide page objects and pre-seed browser state before navigation. The authenticated playlist fixture reads the default subject name and code from `tests/data/courseData.json` and the profile from `tests/data/userProfiles.json`. This keeps tests DRY and avoids repeated setup and object instantiation.
+The suite uses Playwright custom fixtures from `tests/fixtures/customFixtures.js` to provide page objects and pre-seed browser state before navigation. Fixtures cover the base, category, subject, signup, login, auth, playlist, and authenticated playlist page contexts. The authenticated playlist fixture reads the default subject name and code from `tests/data/courseData.json` and the profile from `tests/data/userProfiles.json`. This keeps tests DRY and avoids repeated setup and object instantiation.
 
 ### 4. Storage state isolation
 The app uses browser `localStorage` to persist profile and course state. Storage setup is centralized in `tests/utils/storageHelper.js` so the suite can seed valid users and subject selections without brittle manual setup in each spec.
@@ -96,9 +99,19 @@ These files collectively cover the core modules:
 - category and branch restrictions
 - subject and syllabus button behavior
 - signup/login validation
-- playlist page guard logic and language switching
-- discussion room redirect behavior
+- playlist subject guard, language switching, labeled resource links, and selected-subject status
+- authenticated and unauthenticated discussion-room access
 - parameterized alert and navigation checks for the unsupported ECE, EEE, and CIVIL branches
+
+The suite currently defines 36 Playwright cases across the five active JavaScript spec files. `tests/specs/seed.spec.ts` is an empty placeholder and does not define a test.
+
+### Current frontend behaviors covered
+
+- Authentication state is determined by `localStorage.isLoggedIn === "true"`. `seedUserProfile` seeds authenticated profiles with that value, and the shared header greets the user when authenticated.
+- Branch cards expose duplicate links with the same accessible name. `CategoryPage` targets one of those links explicitly; selecting ECE, EEE, or CIVIL is expected to show `Currently, the service is only available for the CSE branch.`
+- Subject view controls are located by their accessible names: `View Question Papers` and `View Syllabus Copy`.
+- The playlist redirects when no valid subject is selected and shows `You have chosen to learn...` when a subject is present. Its language selector and resource links are located using their ARIA labels.
+- Discussion Room access redirects unauthenticated users to `login.html`; authenticated users see the active-development alert.
 
 ## Setup and Execution
 
@@ -106,6 +119,7 @@ These files collectively cover the core modules:
 
 - Node.js 18+
 - Playwright package installed from the project dependencies
+- Chromium browser installed for Playwright
 - Local Learning Hub frontend environment running at `http://localhost:8000`
 
 ### Install dependencies
@@ -114,13 +128,19 @@ These files collectively cover the core modules:
 npm install
 ```
 
+If Playwright's Chromium browser has not been installed on the machine, install it with:
+
+```bash
+npx playwright install chromium
+```
+
 ### Run the full suite
 
 ```bash
-npx playwright test
+npm test
 ```
 
-The project configuration retries failed tests once and uses Chromium by default. To run serially, for example while diagnosing a flaky result:
+The project configuration runs Chromium, retries failed tests once, and writes an HTML report. To run serially, for example while diagnosing a flaky result:
 
 ```bash
 npx playwright test --workers=1
@@ -132,16 +152,28 @@ npx playwright test --workers=1
 npx playwright test tests/specs/components.spec.js
 ```
 
+Run the category, subject, and playlist feature coverage together:
+
+```bash
+npx playwright test tests/specs/category.spec.js tests/specs/sub_category.spec.js tests/specs/playlist.spec.js
+```
+
 ### Run with UI mode
 
 ```bash
-npx playwright test --ui
+npm run test:ui
 ```
 
 ### Run headed mode
 
 ```bash
-npx playwright test --headed
+npm run test:headed
+```
+
+To open the HTML report after a test run:
+
+```bash
+npx playwright show-report
 ```
 
 ## Project Files by Purpose
@@ -154,12 +186,12 @@ npx playwright test --headed
   - mobile menu toggling
 
 - `tests/pages/CategoryPage.js`
-  - branch card interactions
+  - branch card interactions, uniquely targeting the duplicated accessible branch links
   - alert-handling path for unsupported branches
 
 - `tests/pages/SubCategoryPage.js`
   - semester groups and subject selection
-  - Q-paper vs syllabus toggle
+  - ARIA-labeled question-paper vs syllabus toggle
   - submit flow to playlist
 
 - `tests/pages/AuthPage.js`
@@ -167,7 +199,7 @@ npx playwright test --headed
   - signup and login submission flows
 
 - `tests/pages/PlaylistPage.js`
-  - greeting, status, language, and resource locators
+  - header greeting, status, ARIA-labeled language and resource locators
   - language selection and discussion-room interaction
 
 Assertions for these locators are kept in the corresponding spec files.
@@ -193,13 +225,14 @@ Assertions for these locators are kept in the corresponding spec files.
 
 ## LocalStorage Contract
 
-The app uses a few key browser-state values that the tests depend on:
+The app uses these browser-state values that the tests depend on:
 
+- authentication: `isLoggedIn` (`"true"` means authenticated)
 - identity: `name`, `addno`, `college`, `university`, `branch`, `email`, `key`
 - subject: `subject`, `subjectcode`
 - language: `language`
 
-The tests intentionally avoid manual duplicate logic by reusing the helper layer.
+`seedUserProfile(page, profileObject)` seeds `isLoggedIn: "true"` together with the profile fields by default; values provided in `profileObject` override defaults. The authenticated header displays a personalized greeting and logout link when the flag is true. Subject and language setup is also centralized in the helper layer and fixtures.
 
 ## Test Execution Notes
 
@@ -208,6 +241,7 @@ The tests intentionally avoid manual duplicate logic by reusing the helper layer
 - Keep locators and reusable UI interactions in page objects; perform assertions in spec files.
 - Reuse the profile and course payloads in `tests/data/` instead of duplicating test data.
 - Avoid hard-coded sleeps; wait for actual UI state or element visibility changes.
+- Inspect the live app accessibility tree before adding or changing role/name-based locators; branch card links can have duplicate accessible names.
 
 ## Automation Quality Goals
 
