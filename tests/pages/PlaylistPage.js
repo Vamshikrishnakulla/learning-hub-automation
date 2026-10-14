@@ -23,7 +23,7 @@ export default class PlaylistPage extends BasePage {
   }
 
   async navigateToPlaylist() {
-    await this.page.goto('/playlist.html');
+    await this.page.goto('playlist.html');
   }
 
   async seedSubjectState(subjectName, subjectCode) {

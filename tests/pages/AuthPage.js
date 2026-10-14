@@ -31,7 +31,7 @@ export default class AuthPage extends BasePage {
   }
 
   async navigateToSignup() {
-    await this.page.goto('/signup.html');
+    await this.page.goto('signup.html');
   }
 
   async seedUserProfile(profile) {

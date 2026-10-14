@@ -1,31 +1,46 @@
-name: Playwright Tests
+name: Playwright E2E Tests (Live Site)
 
 on:
   push:
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
+  # Allows Frontend repo to trigger this workflow after deploying to GitHub Pages
+  repository_dispatch:
+    types: [ frontend-deployed ]
+  workflow_dispatch:
 
 jobs:
-  test:
-    timeout-minutes: 60
+  e2e-tests:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
+    env:
+      # Actual GitHub Pages URL
+      BASE_URL: https://vamshikrishnakulla.github.io/TestingProject/
+
     steps:
-      - name: Checkout
+      - name: Checkout Automation Repo
         uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
-          cache: npm
-      - name: Install dependencies
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
         run: npm ci
-      - name: Install Playwright browsers
+
+      - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
-      - name: Run Playwright tests
-        run: npm test
-      - name: Upload report
-        if: always()
+
+      - name: Run Playwright Tests against Live GitHub Pages
+        run: npx playwright test
+
+      - name: Upload Playwright HTML Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 30
+          retention-days: 14
