@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Actual GitHub Pages URL
-      BASE_URL: https://vamshikrishnakulla.github.io/TestingProject/
+      BASE_URL: https://vamshikrishnakulla.github.io/front-end-edu/
 
     steps:
       - name: Checkout Automation Repo
